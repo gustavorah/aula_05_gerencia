@@ -1,0 +1,25 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_USER: tarefa_aula
+      POSTGRES_PASSWORD: tarefa_aula
+      POSTGRES_DB: tarefa_aula
+    ports:
+      - "5432:5432"
+
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    environment:
+      POSTGRES_URL: postgres://tarefa_aula:tarefa_aula@postgres:5432/tarefa_aula
+      POSTGRES_USER: tarefa_aula
+      POSTGRES_HOST: postgres
+      POSTGRES_PASSWORD: tarefa_aula
+      POSTGRES_DATABASE: tarefa_aula
+      POSTGRES_PORT: 5432
