@@ -2,7 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import NextAuth from "next-auth/next";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcrypt";
-import pool from "../../../../../../db";
+import pool from "../../../../../db";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -14,7 +14,8 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Email e senha são obrigatórios");
+          // throw new Error("Email e senha são obrigatórios");
+          return null;
         }
 
         try {
@@ -28,6 +29,7 @@ export const authOptions: NextAuthOptions = {
 
           // If no user found with that email
           if (!user) {
+            return null;
             throw new Error("Email não encontrado");
           }
 
@@ -35,14 +37,15 @@ export const authOptions: NextAuthOptions = {
           const passwordMatch = await compare(credentials.password, user.senha);
 
           if (!passwordMatch) {
+            return null;
             throw new Error("Senha incorreta");
           }
 
           // Update last login time
-          await pool.query(
-            "UPDATE usuario SET ultimo_login = CURRENT_TIMESTAMP WHERE id = $1",
-            [user.id]
-          );
+          // await pool.query(
+          //   "UPDATE usuario SET ultimo_login = CURRENT_TIMESTAMP WHERE id = $1",
+          //   [user.id]
+          // );
 
           // Return the user object (excluding sensitive data)
           return {
@@ -52,6 +55,7 @@ export const authOptions: NextAuthOptions = {
           };
         } catch (error) {
           console.error("Erro ao autenticar:", error);
+          return null;
           throw new Error("Falha na autenticação");
         }
       }
@@ -80,6 +84,7 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: process.env.NEXTAUTH_SECRET || "your-fallback-secret-but-use-env-in-production",
+  debug: true
 };
 
 const handler = NextAuth(authOptions);

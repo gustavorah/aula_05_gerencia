@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hash } from "bcrypt";
-import pool from "../../../../../../db";
+import pool from "../../../../../db";
 
 export async function POST(request: NextRequest) {
   try {
