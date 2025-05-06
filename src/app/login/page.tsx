@@ -14,28 +14,28 @@ export default function Login() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       setError("Email e senha são obrigatórios");
       return;
     }
-    
+
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const result = await signIn("credentials", {
         redirect: false,
         email,
         password,
-        callbackUrl: "/"
+        callbackUrl: "/",
       });
-      
+
       if (result?.error) {
         setError(result.error);
         return;
       }
-      
+
       // Redirect to home page on successful login
       router.push("/");
       router.refresh();
@@ -55,13 +55,16 @@ export default function Login() {
             Faça login em sua conta
           </h2>
         </div>
-        
+
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <div
+            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+            role="alert"
+          >
             <span className="block sm:inline">{error}</span>
           </div>
         )}
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
@@ -105,17 +108,22 @@ export default function Login() {
               type="submit"
               disabled={isLoading}
               className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
-                isLoading ? "bg-indigo-400" : "bg-indigo-600 hover:bg-indigo-700"
+                isLoading
+                  ? "bg-indigo-400"
+                  : "bg-indigo-600 hover:bg-indigo-700"
               } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
             >
               {isLoading ? "Entrando..." : "Entrar"}
             </button>
           </div>
-          
+
           <div className="text-sm text-center">
             <p>
               Não tem uma conta?{" "}
-              <Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
+              <Link
+                href="/register"
+                className="font-medium text-indigo-600 hover:text-indigo-500"
+              >
                 Registre-se
               </Link>
             </p>
@@ -125,4 +133,3 @@ export default function Login() {
     </div>
   );
 }
-
