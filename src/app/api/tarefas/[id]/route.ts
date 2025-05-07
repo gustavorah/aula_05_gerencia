@@ -18,7 +18,7 @@ async function getUserFromRequest(request: NextRequest): Promise<UserSession | n
     }
     
     return {
-      id: token.id,
+      id: token.id as string | number,
       name: token.name as string,
       email: token.email as string
     };

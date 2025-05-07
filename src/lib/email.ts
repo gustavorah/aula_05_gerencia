@@ -8,6 +8,7 @@ interface EmailOptions {
   to: string;
   subject: string;
   html: string;
+  from?: string; // Optional 'from' property
 }
 
 // Create a nodemailer transporter

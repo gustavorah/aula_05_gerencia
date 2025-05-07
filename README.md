@@ -36,7 +36,7 @@ Execute the SQL scripts to create the required tables:
 docker-compose up -d postgres
 
 # Apply database schema (if needed)
-psql -h localhost -U tarefa_aula -d tarefa_aula -f sql/user_table.sql
+psql -h localhost -U tarefas -d tarefas -f sql/user_table.sql
 ```
 
 ### 3. Start the Application
