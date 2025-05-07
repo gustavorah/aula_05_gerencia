@@ -13,9 +13,7 @@ interface EmailOptions {
 // Create a nodemailer transporter
 const createTransporter = () => {
   return nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: Number(process.env.EMAIL_PORT) || 587,
-    secure: Boolean(process.env.EMAIL_SECURE) || false,
+    service: process.env.EMAIL_SERVICE,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD,
@@ -143,6 +141,7 @@ export const sendTaskNotification = async (
   userName: string
 ): Promise<boolean> => {
   try {
+    userEmail = 'gustavo.rahmeier@universo.univates.br';
     const transporter = createTransporter();
     const subject = getEmailSubject(type, tarefa);
     const html = getEmailTemplate(type, tarefa, userName);

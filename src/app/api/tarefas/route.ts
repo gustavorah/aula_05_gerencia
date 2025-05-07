@@ -28,7 +28,107 @@ async function getUserFromRequest(request: NextRequest): Promise<UserSession | n
   }
 }
 
-
+// GET all tarefas with filtering options
+export async function GET(request: NextRequest) {
+  // Get the user from the session
+  const user = await getUserFromRequest(request);
+  
+  if (!user) {
+    return NextResponse.json(
+      { error: "Não autorizado. Faça login para continuar." },
+      { status: 401 }
+    );
+  }
+  
+  const url = new URL(request.url);
+  const idParam = url.pathname.split('/').pop();
+  
+  // If there's an ID in the URL, return a specific tarefa
+  if (idParam && idParam !== 'tarefas') {
+    try {
+      const id = parseInt(idParam);
+      if (isNaN(id)) {
+        return NextResponse.json(
+          { error: "ID inválido" },
+          { status: 400 }
+        );
+      }
+      
+      // Include user_id in the query to ensure the user can only access their own tasks
+      const result = await pool.query(
+        "SELECT * FROM tarefa WHERE id = $1 AND usuario_id = $2", 
+        [id, user.id]
+      );
+      
+      if (result.rows.length === 0) {
+        return NextResponse.json(
+          { error: "Tarefa não encontrada" },
+          { status: 404 }
+        );
+      }
+      
+      return NextResponse.json(result.rows[0]);
+    } catch (error) {
+      console.error("Erro ao buscar tarefa", error);
+      return NextResponse.json(
+        { error: "Erro ao buscar tarefa" },
+        { status: 500 }
+      );
+    }
+  }
+  
+  // Otherwise, return filtered tasks
+  try {
+    // Get filter parameters from query string
+    const filters: TaskFilterOptions = {
+      dateFrom: url.searchParams.get('dateFrom') || undefined,
+      dateTo: url.searchParams.get('dateTo') || undefined,
+      status: url.searchParams.get('status') || undefined,
+      searchTerm: url.searchParams.get('search') || undefined
+    };
+    
+    // Start building the query
+    let query = "SELECT * FROM tarefa WHERE usuario_id = $1";
+    const queryParams: any[] = [user.id];
+    let paramCounter = 2;
+    
+    // Add date range filter
+    if (filters.dateFrom) {
+      query += ` AND data_criacao >= $${paramCounter++}`;
+      queryParams.push(filters.dateFrom);
+    }
+    
+    if (filters.dateTo) {
+      query += ` AND data_criacao <= $${paramCounter++}`;
+      queryParams.push(filters.dateTo);
+    }
+    
+    // Add status filter
+    if (filters.status !== undefined) {
+      const statusValue = filters.status === 'true' || filters.status === '1';
+      query += ` AND situacao = $${paramCounter++}`;
+      queryParams.push(statusValue);
+    }
+    
+    // Add search term filter
+    if (filters.searchTerm) {
+      query += ` AND descricao ILIKE $${paramCounter++}`;
+      queryParams.push(`%${filters.searchTerm}%`);
+    }
+    
+    // Add order by
+    query += " ORDER BY data_criacao DESC";
+    
+    const result = await pool.query(query, queryParams);
+    return NextResponse.json(result.rows);
+  } catch (error) {
+    console.error("Erro ao buscar tarefas", error);
+    return NextResponse.json(
+      { error: "Erro ao buscar tarefas" },
+      { status: 500 }
+    );
+  }
+}
 
 // POST a new tarefa
 export async function POST(request: NextRequest) {
@@ -49,6 +149,13 @@ export async function POST(request: NextRequest) {
     if (!body.descricao) {
       return NextResponse.json(
         { error: "Descrição é obrigatória" },
+        { status: 400 }
+      );
+    }
+
+    if (body.data_previsao && ! isNaN(Date.parse(body.data_previsao)) && Date.parse(body.data_previsao) < Date.now()) {
+      return NextResponse.json(
+        { error: "Data de previsão não pode ser no passado" },
         { status: 400 }
       );
     }

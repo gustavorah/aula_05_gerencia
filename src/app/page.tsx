@@ -342,7 +342,7 @@ export default function TarefaView() {
     try {
       setIsExporting(true);
 
-      // Build query string from filter parameters
+      // Montar query string dos filtros
       const queryParams = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
         if (value) queryParams.append(key, value.toString());
@@ -353,12 +353,24 @@ export default function TarefaView() {
         ? `/api/tarefas/export?${queryString}`
         : "/api/tarefas/export";
 
-      // Open the export URL in a new window
-      const exportWindow = window.open(url, "_blank");
+      // Buscar o PDF como blob
+      const response = await fetch(url);
 
-      if (!exportWindow) {
-        throw new Error("Pop-up bloqueado pelo navegador");
+      if (!response.ok) {
+        throw new Error("Erro ao gerar o PDF");
       }
+
+      const blob = await response.blob();
+
+      // Criar URL temporária e forçar download
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = "tarefas.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
 
       showFeedback("PDF gerado com sucesso!", false);
     } catch (error) {
@@ -464,7 +476,7 @@ export default function TarefaView() {
                 onChange={handleInputChange}
                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 rows={3}
-                required
+                // required
               />
             </div>
 
@@ -480,7 +492,7 @@ export default function TarefaView() {
                   type="datetime-local"
                   id="data_previsao"
                   name="data_previsao"
-                  value={currentTask.data_previsao}
+                  value={currentTask.data_previsao || ""}
                   onChange={handleInputChange}
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 />
@@ -779,7 +791,9 @@ export default function TarefaView() {
               className="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500"
             >
               <div className="flex justify-between items-start mb-2">
-                <h3 className="text-lg font-semibold">{tarefa.descricao}</h3>
+                <h3 className="text-lg font-semibold text-black">
+                  {tarefa.descricao}
+                </h3>
                 <div className="flex space-x-2">
                   <button
                     onClick={() => startEditing(tarefa)}
@@ -802,19 +816,25 @@ export default function TarefaView() {
                 <div className="space-y-2">
                   <p className="text-sm">
                     <span className="font-bold text-gray-700">Criação:</span>{" "}
-                    {formatDate(tarefa.data_criacao)}
+                    <span className="text-black">
+                      {formatDate(tarefa.data_criacao)}
+                    </span>
                   </p>
                   <p className="text-sm">
                     <span className="font-bold text-gray-700">Previsão:</span>{" "}
-                    {formatDate(tarefa.data_previsao)}
+                    <span className="text-black">
+                      {formatDate(tarefa.data_previsao)}
+                    </span>
                   </p>
                   <p className="text-sm">
                     <span className="font-bold text-gray-700">
                       Encerramento:
                     </span>{" "}
-                    {tarefa.data_encerramento
-                      ? formatDate(tarefa.data_encerramento)
-                      : "Não encerrada"}
+                    <span className="text-black">
+                      {tarefa.data_encerramento
+                        ? formatDate(tarefa.data_encerramento)
+                        : "Não encerrada"}
+                    </span>
                   </p>
                 </div>
 

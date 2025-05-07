@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import pool from "../../../../../db";
 import { UserSession } from "../../../../types/tarefa";
+import puppeteer from "puppeteer";
 
 // Helper function to get the user from the request
 async function getUserFromRequest(request: NextRequest): Promise<UserSession | null> {
@@ -146,72 +147,74 @@ function generatePdfContent(tasks: any[], userName: string) {
 
 // GET endpoint to export tasks as PDF
 export async function GET(request: NextRequest) {
-  // Get the user from the session
   const user = await getUserFromRequest(request);
-  
   if (!user) {
     return NextResponse.json(
       { error: "Não autorizado. Faça login para continuar." },
       { status: 401 }
     );
   }
-  
+
   try {
     const url = new URL(request.url);
-    
-    // Get filter parameters from query string
-    const dateFrom = url.searchParams.get('dateFrom');
-    const dateTo = url.searchParams.get('dateTo');
-    const status = url.searchParams.get('status');
-    const searchTerm = url.searchParams.get('search');
-    
-    // Start building the query
+    const dateFrom = url.searchParams.get("dateFrom");
+    const dateTo = url.searchParams.get("dateTo");
+    const status = url.searchParams.get("status");
+    const searchTerm = url.searchParams.get("search");
+
     let query = "SELECT * FROM tarefa WHERE usuario_id = $1";
     const queryParams: any[] = [user.id];
     let paramCounter = 2;
-    
-    // Add date range filter
+
     if (dateFrom) {
       query += ` AND data_criacao >= $${paramCounter++}`;
       queryParams.push(dateFrom);
     }
-    
+
     if (dateTo) {
       query += ` AND data_criacao <= $${paramCounter++}`;
       queryParams.push(dateTo);
     }
-    
-    // Add status filter
+
     if (status !== null && status !== undefined) {
-      const statusValue = status === 'true' || status === '1';
+      const statusValue = status === "true" || status === "1";
       query += ` AND situacao = $${paramCounter++}`;
       queryParams.push(statusValue);
     }
-    
-    // Add search term filter
+
     if (searchTerm) {
       query += ` AND descricao ILIKE $${paramCounter++}`;
       queryParams.push(`%${searchTerm}%`);
     }
-    
-    // Add order by
+
     query += " ORDER BY data_criacao DESC";
-    
-    // Execute the query
+
     const result = await pool.query(query, queryParams);
     const tasks = result.rows;
-    
-    // Generate HTML content for the PDF
+
     const htmlContent = generatePdfContent(tasks, user.name);
-    
-    // Return the HTML content for client-side PDF generation
-    return new NextResponse(htmlContent, {
+
+    // Puppeteer: criar PDF a partir do HTML
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+    await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      printBackground: true,
+    });
+
+    await browser.close();
+
+    return new NextResponse(pdfBuffer, {
+      status: 200,
       headers: {
-        'Content-Type': 'text/html',
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="tarefas.pdf"`,
       },
     });
   } catch (error) {
-    console.error("Erro ao exportar tarefas para PDF:", error);
+    console.error("Erro ao gerar PDF:", error);
     return NextResponse.json(
       { error: "Erro ao gerar PDF de tarefas" },
       { status: 500 }
