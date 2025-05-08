@@ -195,7 +195,7 @@ export async function GET(request: NextRequest) {
     const htmlContent = generatePdfContent(tasks, user.name);
 
     // Puppeteer: criar PDF a partir do HTML
-    const browser = await puppeteer.launch({ headless: true });
+    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
     const page = await browser.newPage();
     await page.setContent(htmlContent, { waitUntil: "networkidle0" });
 
